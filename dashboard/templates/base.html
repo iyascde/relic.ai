@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Relic.ai{% block title_suffix %} — {% block page_title %}Dashboard{% endblock %}{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+  <!-- Tabler Icons CDN -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.11.0/tabler-icons.min.css">
+</head>
+<body>
+  <div class="app-layout">
+
+    <!-- ============================================================
+         Sidebar
+         ============================================================ -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-logo">
+        <img src="{{ url_for('static', filename='assets/logo.svg') }}" alt="Relic.ai logo" width="48" height="48">
+        <div class="sidebar-wordmark">Relic<span>.ai</span></div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a href="{{ url_for('overview') }}" class="nav-item {% if page == 'overview' %}active{% endif %}">
+          <i class="ti ti-layout-dashboard"></i>
+          <span>Overview</span>
+        </a>
+        <a href="{{ url_for('risk') }}" class="nav-item {% if page == 'risk' %}active{% endif %}">
+          <i class="ti ti-shield-half-filled"></i>
+          <span>Risk Analysis</span>
+        </a>
+        <a href="{{ url_for('incidents') }}" class="nav-item {% if page == 'incidents' %}active{% endif %}">
+          <i class="ti ti-alert-triangle"></i>
+          <span>Incidents</span>
+        </a>
+        <a href="{{ url_for('memory') }}" class="nav-item {% if page == 'memory' %}active{% endif %}">
+          <i class="ti ti-archive"></i>
+          <span>Memory Archive</span>
+        </a>
+        <a href="{{ url_for('settings') }}" class="nav-item {% if page == 'settings' %}active{% endif %}">
+          <i class="ti ti-settings"></i>
+          <span>Settings</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="system-status" id="sidebarStatus">
+          <div class="status-dot" id="statusDot"></div>
+          <span id="statusLabel">Checking…</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ============================================================
+         Main content
+         ============================================================ -->
+    <div class="main-content">
+      <header class="topbar">
+        <div class="topbar-title">{% block page_title_display %}Dashboard{% endblock %}</div>
+        <div class="topbar-clock" id="liveClock"></div>
+      </header>
+
+      <main class="page-content">
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+
+  </div><!-- /.app-layout -->
+
+  <!-- ============================================================
+       JavaScript
+       ============================================================ -->
+  <!-- Chart.js from cdnjs -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <!-- Shared utilities -->
+  <script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+  <!-- Page-specific scripts -->
+  {% block scripts %}{% endblock %}
+</body>
+</html>
+

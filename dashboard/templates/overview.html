@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+{% block page_title %}Overview{% endblock %}
+{% block page_title_display %}Overview{% endblock %}
+
+{% block content %}
+
+<!-- Mock mode banner -->
+<div class="mock-banner" id="mockBanner" style="display:none">
+  <i class="ti ti-flask"></i>
+  <strong>Mock Mode Active</strong> — All API calls return simulated data. Set <code>USE_MOCK_RESPONSES=false</code> and fill in your API keys to go live.
+</div>
+
+<!-- Hero -->
+<section class="hero">
+  <h1 class="hero-headline">Institutional <em>memory</em><br>for your codebase.</h1>
+  <p class="hero-sub">Relic.ai watches every pull request and incident, reasons over your history of past outages, and surfaces the knowledge your team has earned the hard way — automatically.</p>
+</section>
+
+<!-- Stat grid -->
+<div class="stat-grid section" id="statGrid">
+  <div class="stat-card fade-in">
+    <div class="stat-card-icon"><i class="ti ti-git-pull-request" style="font-size:18px"></i></div>
+    <div class="stat-value" id="statPRs">—</div>
+    <div class="stat-label">PRs Analyzed</div>
+  </div>
+  <div class="stat-card fade-in" style="transition-delay:0.05s">
+    <div class="stat-card-icon"><i class="ti ti-chart-bar" style="font-size:18px"></i></div>
+    <div class="stat-value" id="statAvgRisk">—</div>
+    <div class="stat-label">Avg Risk Score</div>
+  </div>
+  <div class="stat-card fade-in" style="transition-delay:0.1s">
+    <div class="stat-card-icon"><i class="ti ti-alert-triangle" style="font-size:18px"></i></div>
+    <div class="stat-value" id="statIncidents">—</div>
+    <div class="stat-label">Incidents Triaged</div>
+  </div>
+  <div class="stat-card fade-in" style="transition-delay:0.15s">
+    <div class="stat-card-icon"><i class="ti ti-archive" style="font-size:18px"></i></div>
+    <div class="stat-value" id="statMemories">—</div>
+    <div class="stat-label">Memories Stored</div>
+  </div>
+</div>
+
+<!-- Two-col: activity feed + risk trend chart -->
+<div class="two-col section">
+
+  <!-- Activity feed -->
+  <div class="card fade-in">
+    <div class="card-header">
+      <span class="card-title">Recent Activity</span>
+      <span class="badge badge-mock" id="activityBadge" style="font-size:0.7rem">Live</span>
+    </div>
+    <div class="card-body">
+      <div class="activity-feed" id="activityFeed">
+        <div class="loading-center"><div class="spinner"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Risk trend chart -->
+  <div>
+    <div class="card fade-in" style="margin-bottom:16px">
+      <div class="card-header">
+        <span class="card-title">Risk Score Trend</span>
+        <span style="font-size:0.75rem;color:var(--text-muted)">Last 30 days</span>
+      </div>
+      <div class="card-body">
+        <div class="chart-container">
+          <canvas id="riskTrendChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- System health -->
+    <div class="card fade-in">
+      <div class="card-header">
+        <span class="card-title">System Health</span>
+      </div>
+      <div class="card-body">
+        <div class="health-grid" id="healthGrid">
+          <div class="loading-center"><div class="spinner"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /.two-col -->
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+<script>
+(async function initOverview() {
+  const [scoresResp, incidentsResp, memoryResp, healthResp] = await Promise.all([
+    fetch('/api/scores').then(r => r.json()).catch(() => ({scores: []})),
+    fetch('/api/incidents').then(r => r.json()).catch(() => ({incidents: []})),
+    fetch('/api/memory').then(r => r.json()).catch(() => ({total: 0, memories: []})),
+    fetch('/health').then(r => r.json()).catch(() => ({status: 'error', components: {}})),
+  ]);
+
+  const scores    = scoresResp.scores    || [];
+  const incidents = incidentsResp.incidents || [];
+  const memories  = memoryResp.total     || 0;
+  const mockMode  = healthResp.mock_mode;
+
+  // Mock banner
+  if (mockMode) document.getElementById('mockBanner').style.display = 'flex';
+
+  // Stats
+  document.getElementById('statPRs').textContent      = scores.length;
+  document.getElementById('statIncidents').textContent = incidents.length;
+  document.getElementById('statMemories').textContent  = memories;
+
+  if (scores.length) {
+    const avg = Math.round(scores.reduce((s, r) => s + r.score, 0) / scores.length);
+    const el  = document.getElementById('statAvgRisk');
+    el.textContent = avg;
+    el.style.color = getRiskColor(avg);
+  } else {
+    document.getElementById('statAvgRisk').textContent = '—';
+  }
+
+  // Activity feed
+  const feed = document.getElementById('activityFeed');
+  const events = buildActivityEvents(scores, incidents);
+  if (!events.length) {
+    feed.innerHTML = '<p style="color:var(--text-muted);font-size:0.85rem;text-align:center;padding:24px 0">No activity yet. Send a webhook to get started.</p>';
+  } else {
+    feed.innerHTML = events.slice(0, 10).map(e => `
+      <div class="activity-item">
+        <div class="activity-dot ${e.type}"></div>
+        <div class="activity-body">
+          <div class="activity-title">${e.title}</div>
+          <div class="activity-meta">${e.meta} · ${formatTimestamp(e.time)}</div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // Risk trend chart
+  const trendData = buildTrendData(scores);
+  createLineChart('riskTrendChart', {
+    labels: trendData.labels,
+    datasets: [{
+      label: 'Risk Score',
+      data: trendData.values,
+      tension: 0.4,
+      fill: true,
+    }]
+  });
+
+  // Health grid
+  const components = healthResp.components || {};
+  const healthItems = [
+    { name: 'Webhook Server', key: 'webhook_server' },
+    { name: 'Database',       key: 'database' },
+    { name: 'Pinecone',       key: 'pinecone' },
+    { name: 'Anthropic',      key: 'anthropic' },
+    { name: 'GitHub',         key: 'github' },
+  ];
+  document.getElementById('healthGrid').innerHTML = healthItems.map(item => {
+    const comp   = components[item.key] || {};
+    const status = comp.status || 'unknown';
+    const color  = status === 'ok' || status === 'mock' ? 'var(--color-success)'
+                 : status === 'live' ? 'var(--accent-gold)'
+                 : 'var(--color-danger)';
+    return `
+      <div class="health-item">
+        <div class="status-dot" style="background:${color}"></div>
+        <div>
+          <div class="health-name">${item.name}</div>
+          <div class="health-status" style="color:${color}">${status.toUpperCase()}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // Trigger fade-ins
+  requestAnimationFrame(() => {
+    document.querySelectorAll('.stat-card, .fade-in').forEach((el, i) => {
+      setTimeout(() => el.classList.add('visible'), i * 60);
+    });
+  });
+})();
+
+function buildActivityEvents(scores, incidents) {
+  const events = [];
+  scores.forEach(s => events.push({
+    type:  'pr-analyzed',
+    title: `PR #${s.pr_number} analyzed — score ${s.score}/100`,
+    meta:  getRiskLabel(s.score),
+    time:  s.created_at,
+  }));
+  incidents.forEach(inc => {
+    events.push({
+      type:  'incident-open',
+      title: `Incident #${inc.issue_number}: ${inc.title}`,
+      meta:  inc.status === 'closed' ? 'Resolved' : 'Active',
+      time:  inc.created_at,
+    });
+    if (inc.status === 'closed' && inc.resolved_at) {
+      events.push({
+        type:  'memory-stored',
+        title: `Memory stored for #${inc.issue_number}`,
+        meta:  'Lessons indexed to Pinecone',
+        time:  inc.resolved_at,
+      });
+    }
+  });
+  return events.sort((a, b) => new Date(b.time) - new Date(a.time));
+}
+
+function buildTrendData(scores) {
+  if (!scores.length) {
+    const labels = [];
+    const values = [];
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      labels.push(d.toLocaleDateString('en-US', {month: 'short', day: 'numeric'}));
+      values.push(null);
+    }
+    return {labels, values};
+  }
+  const byDay = {};
+  scores.forEach(s => {
+    const day = s.created_at ? s.created_at.split('T')[0] : new Date().toISOString().split('T')[0];
+    if (!byDay[day]) byDay[day] = [];
+    byDay[day].push(s.score);
+  });
+  const labels = [];
+  const values = [];
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const key = d.toISOString().split('T')[0];
+    labels.push(d.toLocaleDateString('en-US', {month: 'short', day: 'numeric'}));
+    if (byDay[key]) {
+      values.push(Math.round(byDay[key].reduce((a, b) => a + b, 0) / byDay[key].length));
+    } else {
+      values.push(null);
+    }
+  }
+  return {labels, values};
+}
+</script>
+{% endblock %}
+

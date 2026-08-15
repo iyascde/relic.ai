@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+{% block page_title %}Settings{% endblock %}
+{% block page_title_display %}Settings{% endblock %}
+
+{% block content %}
+
+<!-- Mock mode toggle -->
+<div class="section">
+  <div class="card fade-in">
+    <div class="card-header">
+      <span class="card-title">Mock Mode</span>
+      {% if env_vars.USE_MOCK_RESPONSES == 'true' %}
+        <span class="badge badge-mock">MOCK ACTIVE</span>
+      {% else %}
+        <span class="badge badge-live">LIVE MODE</span>
+      {% endif %}
+    </div>
+    <div class="card-body">
+      <p style="margin-bottom:12px;font-size:0.9rem">
+        {% if env_vars.USE_MOCK_RESPONSES == 'true' %}
+          <strong style="color:var(--accent-bronze)">Mock mode is ON.</strong>
+          All API calls (Anthropic, Pinecone, GitHub) return realistic mock responses.
+          No real API keys are used. This is safe for development and demos.
+        {% else %}
+          <strong style="color:var(--color-success)">Live mode is ON.</strong>
+          All API calls are made to real external services. Ensure your API keys are configured.
+        {% endif %}
+      </p>
+      <p style="font-size:0.82rem;color:var(--text-muted)">
+        To switch modes, set <code>USE_MOCK_RESPONSES=true</code> or <code>false</code> in your <code>.env</code> file and restart.
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- Environment variables -->
+<div class="section">
+  <div class="card fade-in" style="transition-delay:0.05s">
+    <div class="card-header">
+      <span class="card-title">Environment Variables</span>
+      <span style="font-size:0.75rem;color:var(--text-muted)">Sensitive values are masked</span>
+    </div>
+    <div class="card-body">
+      <table class="env-table">
+        <tbody>
+          {% for key, value in env_vars.items() %}
+          <tr>
+            <td>{{ key }}</td>
+            <td>{{ value }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- System status -->
+<div class="section">
+  <div class="card fade-in" style="transition-delay:0.1s">
+    <div class="card-header">
+      <span class="card-title">System Status</span>
+    </div>
+    <div class="card-body">
+      <div class="health-grid" id="settingsHealthGrid">
+        <div class="loading-center"><div class="spinner"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Go-live instructions -->
+<div class="section">
+  <div class="card fade-in" style="transition-delay:0.15s">
+    <div class="card-header">
+      <span class="card-title">How to Go Live</span>
+    </div>
+    <div class="card-body">
+      <ol class="step-list">
+        <li class="step-item">
+          <span class="step-num">1</span>
+          <span>Copy <code>.env.example</code> to <code>.env</code> and fill in all API keys and repo details.</span>
+        </li>
+        <li class="step-item">
+          <span class="step-num">2</span>
+          <span>Set <code>USE_MOCK_RESPONSES=false</code> in <code>.env</code>.</span>
+        </li>
+        <li class="step-item">
+          <span class="step-num">3</span>
+          <span>Restart the server: <code>docker-compose restart</code> (or <code>python -m webhook.server</code>).</span>
+        </li>
+        <li class="step-item">
+          <span class="step-num">4</span>
+          <span>Register the GitHub webhook: Settings → Webhooks → Add webhook. Set the Payload URL to <code>https://your-domain.com/webhook</code>, Content type to <code>application/json</code>, and the secret to the value of <code>GITHUB_WEBHOOK_SECRET</code>. Enable events: <strong>Pull requests</strong> and <strong>Issues</strong>.</span>
+        </li>
+        <li class="step-item">
+          <span class="step-num">5</span>
+          <span>Create a Pinecone index named <code>relic-ai-incidents</code> with dimension <strong>1536</strong> and cosine metric.</span>
+        </li>
+        <li class="step-item">
+          <span class="step-num">6</span>
+          <span>Open a test PR or create an issue labeled <code>incident</code> to verify the full pipeline.</span>
+        </li>
+      </ol>
+    </div>
+  </div>
+</div>
+
+<!-- Danger zone -->
+<div class="section">
+  <div class="danger-zone fade-in" style="transition-delay:0.2s">
+    <h3 class="danger-zone-title">Danger Zone</h3>
+    <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:16px">
+      Permanently delete all risk scores and incident records from the local database.
+      This cannot be undone. Pinecone vector memories are not affected.
+    </p>
+    <button class="btn btn-danger" onclick="confirmClear()">
+      <i class="ti ti-trash"></i>
+      Clear All Data
+    </button>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+(async function loadHealth() {
+  const health = await fetch('/health').then(r => r.json()).catch(() => ({}));
+  const components = health.components || {};
+  const items = [
+    { name: 'Webhook Server', key: 'webhook_server' },
+    { name: 'Database',       key: 'database' },
+    { name: 'Pinecone',       key: 'pinecone' },
+    { name: 'Anthropic',      key: 'anthropic' },
+    { name: 'GitHub',         key: 'github' },
+  ];
+  document.getElementById('settingsHealthGrid').innerHTML = items.map(item => {
+    const comp   = components[item.key] || {};
+    const status = comp.status || 'unknown';
+    const color  = (status === 'ok' || status === 'mock') ? 'var(--color-success)'
+                 : status === 'live' ? 'var(--accent-gold)'
+                 : 'var(--color-danger)';
+    return `
+      <div class="health-item">
+        <div class="status-dot" style="background:${color}"></div>
+        <div>
+          <div class="health-name">${item.name}</div>
+          <div class="health-status" style="color:${color}">${status.toUpperCase()}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  document.querySelectorAll('.fade-in').forEach((el, i) => {
+    setTimeout(() => el.classList.add('visible'), i * 80);
+  });
+})();
+
+function confirmClear() {
+  if (!confirm('Are you sure? This will permanently delete ALL risk scores and incidents from the database.')) return;
+  if (!confirm('Last chance — this cannot be undone. Proceed?')) return;
+  fetch('/api/clear', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({confirm: true}),
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.error) { alert('Error: ' + data.error); return; }
+    alert('All data cleared successfully.');
+    location.reload();
+  })
+  .catch(() => alert('Request failed.'));
+}
+</script>
+{% endblock %}
+

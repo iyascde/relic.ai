@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" fill="none">
+  <!-- Outer ring with notch marks (ancient coin feel) -->
+  <circle cx="32" cy="32" r="30" stroke="#c9a84c" stroke-width="2.5" fill="none"/>
+  <!-- Notch marks around the outer ring -->
+  <line x1="32" y1="2" x2="32" y2="7" stroke="#c9a84c" stroke-width="2"/>
+  <line x1="32" y1="57" x2="32" y2="62" stroke="#c9a84c" stroke-width="2"/>
+  <line x1="2" y1="32" x2="7" y2="32" stroke="#c9a84c" stroke-width="2"/>
+  <line x1="57" y1="32" x2="62" y2="32" stroke="#c9a84c" stroke-width="2"/>
+  <line x1="9.37" y1="9.37" x2="12.89" y2="12.89" stroke="#c9a84c" stroke-width="2"/>
+  <line x1="51.11" y1="51.11" x2="54.63" y2="54.63" stroke="#c9a84c" stroke-width="2"/>
+  <line x1="54.63" y1="9.37" x2="51.11" y2="12.89" stroke="#c9a84c" stroke-width="2"/>
+  <line x1="12.89" y1="51.11" x2="9.37" y2="54.63" stroke="#c9a84c" stroke-width="2"/>
+  <!-- Inner decorative ring -->
+  <circle cx="32" cy="32" r="24" stroke="#8b6f3e" stroke-width="1" fill="none" stroke-dasharray="3 3"/>
+  <!-- Filled background disc -->
+  <circle cx="32" cy="32" r="21" fill="#2e2820"/>
+  <!-- Serif R letterform -->
+  <text x="32" y="41" text-anchor="middle" font-family="Georgia, serif" font-size="26" font-weight="700" fill="#c9a84c" letter-spacing="-1">R</text>
+  <!-- Small accent dot at bottom of inner ring -->
+  <circle cx="32" cy="56" r="2" fill="#c9a84c"/>
+</svg>
+

@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block page_title %}Risk Analysis{% endblock %}
+{% block page_title_display %}Risk Analysis{% endblock %}
+
+{% block content %}
+
+<div class="section">
+  <div class="two-col" style="grid-template-columns: 1fr 280px; margin-bottom: 20px; align-items: center;">
+    <div class="search-bar">
+      <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+      </svg>
+      <input type="text" id="riskSearch" placeholder="Search by PR number, title, or file…">
+    </div>
+    <div>
+      <div class="card" style="padding:12px 16px">
+        <div class="chart-container" style="height:100px">
+          <canvas id="riskDistChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card fade-in">
+    <div class="card-header">
+      <span class="card-title">Pull Request Risk Scores</span>
+      <span class="badge badge-mock" id="scoreCount" style="font-size:0.7rem">—</span>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="data-table" id="riskTable">
+        <thead>
+          <tr>
+            <th>PR</th>
+            <th>Title / Reason</th>
+            <th>Risk Score</th>
+            <th>Files at Risk</th>
+            <th>Date</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="riskTableBody">
+          <tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted)">
+            <div class="spinner" style="margin:0 auto"></div>
+          </td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Detail panel overlay -->
+<div class="detail-panel-overlay" id="panelOverlay" onclick="closePanel()"></div>
+
+<!-- Detail panel -->
+<aside class="detail-panel" id="detailPanel">
+  <button class="detail-panel-close" onclick="closePanel()">
+    <i class="ti ti-x"></i>
+  </button>
+  <div id="detailPanelContent">
+    <p style="color:var(--text-muted)">Select a PR row to see details.</p>
+  </div>
+</aside>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/risk.js') }}"></script>
+{% endblock %}
+

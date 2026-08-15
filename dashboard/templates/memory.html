@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block page_title %}Memory Archive{% endblock %}
+{% block page_title_display %}Memory Archive{% endblock %}
+
+{% block content %}
+
+<!-- Archive header -->
+<section class="hero" style="margin-bottom:24px">
+  <h1 class="hero-headline" style="font-size:2rem">The Archive</h1>
+  <p class="hero-sub" id="archiveSubtitle">Loading artifacts from the archive…</p>
+</section>
+
+<!-- Search bar -->
+<div class="search-bar section" style="max-width:480px">
+  <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+  </svg>
+  <input type="text" id="memorySearch" placeholder="Search artifacts by title, root cause, or file…">
+</div>
+
+<!-- Two-col: memory grid + stratigraphy -->
+<div class="two-col" style="grid-template-columns: 1fr 260px; align-items:start">
+
+  <!-- Memory grid -->
+  <div>
+    <div class="memory-grid" id="memoryGrid">
+      <div class="loading-center" style="grid-column:1/-1"><div class="spinner"></div></div>
+    </div>
+    <p id="noMemories" style="display:none;color:var(--text-muted);text-align:center;padding:48px;font-size:0.9rem">
+      No artifacts in the archive yet. Close an incident to store the first memory.
+    </p>
+  </div>
+
+  <!-- Stratigraphy timeline -->
+  <div>
+    <div class="section-header" style="margin-bottom:10px">
+      <span class="section-title" style="font-size:0.95rem">Stratigraphy</span>
+      <span style="font-size:0.72rem;color:var(--text-muted)">newest → oldest</span>
+    </div>
+    <div class="strat-timeline" id="stratTimeline">
+      <div class="loading-center"><div class="spinner"></div></div>
+    </div>
+    <p style="font-size:0.68rem;color:var(--text-muted);margin-top:8px;text-align:center">
+      Deeper layers = older memories
+    </p>
+  </div>
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/memory.js') }}"></script>
+{% endblock %}
+

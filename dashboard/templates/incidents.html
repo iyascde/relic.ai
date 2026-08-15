@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block page_title %}Incidents{% endblock %}
+{% block page_title_display %}Incident Intelligence{% endblock %}
+
+{% block content %}
+
+<!-- MTTR + chart row -->
+<div class="two-col" style="grid-template-columns:200px 1fr; margin-bottom:24px; align-items: stretch;">
+  <div class="card fade-in">
+    <div class="metric-hero">
+      <div class="metric-value" id="mttrValue">—</div>
+      <div class="metric-unit">minutes</div>
+      <div class="metric-label">Mean Time to Resolve</div>
+    </div>
+  </div>
+  <div class="card fade-in" style="transition-delay:0.05s">
+    <div class="card-header">
+      <span class="card-title">Incidents Over Time</span>
+      <span style="font-size:0.75rem;color:var(--text-muted)">by week</span>
+    </div>
+    <div class="card-body">
+      <div class="chart-container">
+        <canvas id="incidentChart"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Tabs -->
+<div class="tab-list">
+  <button class="tab-btn active" id="tabActive" onclick="switchTab('active')">Active Incidents</button>
+  <button class="tab-btn" id="tabResolved" onclick="switchTab('resolved')">Resolved</button>
+</div>
+
+<!-- Active incidents -->
+<div id="paneActive">
+  <div id="activeList">
+    <div class="loading-center"><div class="spinner"></div></div>
+  </div>
+</div>
+
+<!-- Resolved incidents -->
+<div id="paneResolved" style="display:none">
+  <div id="resolvedList">
+    <div class="loading-center"><div class="spinner"></div></div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/incidents.js') }}"></script>
+{% endblock %}
+
